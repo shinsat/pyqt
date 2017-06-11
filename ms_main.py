@@ -4,34 +4,36 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.uic import *
 import time
+from threading import Thread
 
 import asyncio
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrConnectionClosed, ErrTimeout, ErrNoServers
+from quamash import QEventLoop, QThreadExecutor
 
 def run(loop):
   nc = NATS()
-
   yield from nc.connect(io_loop=loop)
 
   @asyncio.coroutine
   def message_handler(msg):
+    print('received something')
     subject = msg.subject
     reply = msg.reply
     data = msg.data.decode()
     print("Received a message on '{subject} {reply}': {data}".format(
       subject=subject, reply=reply, data=data))
 
-  time.sleep(10)
   # Simple publisher and async subscriber via coroutine.
   sid = yield from nc.subscribe("foo", cb=message_handler)
 
   # Stop receiving after 2 messages.
-  yield from nc.auto_unsubscribe(sid, 2)
-  yield from nc.publish("foo", b'Hello')
-  yield from nc.publish("foo", b'World')
-  yield from nc.publish("foo", b'!!!!!')
+  #yield from nc.auto_unsubscribe(sid, 2)
+  #yield from nc.publish("foo", b'Hello')
+  #yield from nc.publish("foo", b'World')
+  #yield from nc.publish("foo", b'!!!!!')
 
+  '''
   @asyncio.coroutine
   def help_request(msg):
     subject = msg.subject
@@ -40,21 +42,59 @@ def run(loop):
     print("Received a message on '{subject} {reply}': {data}".format(
       subject=subject, reply=reply, data=data))
     yield from nc.publish(reply, b'I can help')
-
+  '''
   # Use queue named 'workers' for distributing requests
   # among subscribers.
-  yield from nc.subscribe("help", "workers", help_request)
+  #yield from nc.subscribe("help", "workers", help_request)
 
   # Send a request and expect a single response
   # and trigger timeout if not faster than 50 ms.
-  try:
-    response = yield from nc.timed_request("help", b'help me', 0.050)
-    print("Received response: {message}".format(message=response.data.decode()))
-  except ErrTimeout:
-    print("Request timed out")
+  #try:
+  #  response = yield from nc.timed_request("help", b'help me', 10.050)
+  #  print("Received response: {message}".format(message=response.data.decode()))
+  #except ErrTimeout:
+  #  print("Request timed out")
 
   yield from asyncio.sleep(1, loop=loop)
-  yield from nc.close()
+  #yield from nc.close()
+
+class Component(object):
+
+    def __init__(self, nc, loop):
+        self.nc = nc
+        self.loop = loop
+
+    def response_handler(self, msg):
+        print("--- Received: ", msg.subject, msg.data)
+
+    @asyncio.coroutine
+    def another_handler(self, msg):
+        print("--- Another: ", msg.subject, msg.data, msg.reply)
+        yield from self.nc.publish(msg.reply, b'I can help!')
+
+    def run(self):
+        yield from self.nc.connect(io_loop=self.loop)
+        yield from self.nc.subscribe("hello", cb=self.response_handler)
+        yield from self.nc.subscribe("another", cb=self.another_handler)
+        yield from self.nc.flush()
+
+def another_thread(c):
+    # Should have ensured that we are connected by this point.
+    if not c.nc.is_connected:
+        print("Not connected to NATS!")
+        return
+
+    asyncio.run_coroutine_threadsafe(c.nc.subscribe("hi", cb=c.response_handler), loop=c.loop)
+    asyncio.run_coroutine_threadsafe(c.nc.flush(), loop=c.loop)
+    asyncio.run_coroutine_threadsafe(c.nc.publish("hello", b'world'), loop=c.loop)
+    asyncio.run_coroutine_threadsafe(c.nc.publish("hi", b'example'), loop=c.loop)
+
+    future = asyncio.run_coroutine_threadsafe(c.nc.timed_request("another", b'example'), loop=c.loop)
+    msg = future.result()
+    print("--- Got: ", msg.data)
+
+
+
 
 class Model(QAbstractItemModel):
     headers = 'ID','記事','分類器2','分類器2','分類器3'
@@ -109,6 +149,16 @@ class Model(QAbstractItemModel):
 
 
 class Me(QMainWindow):
+
+    @asyncio.coroutine
+    def request_handler(msg):
+        print("[Request on '{} {}']: {}".format(msg.subject, msg.reply, msg.data.decode()))
+        yield from msg.nc.publish(msg.reply, b'OK')
+
+    @asyncio.coroutine
+    def master(self):
+        yield from self.nc.subscribe("help", "workers", cb=self.request_handler)
+
     def __init__(self):
         #self.nc = NATS()
 
@@ -122,6 +172,11 @@ class Me(QMainWindow):
         '''
 
         super().__init__()
+
+        #self.nc = NATS()
+        #self.nc.connect()
+        #self.nc.subscribe("help", "workers", cb=self.request_handler)
+
         self.ui = loadUi('ms_main.ui', self)
         self.model = Model(self)
         self.ui.lv_news.setModel(self.model)
@@ -144,6 +199,19 @@ class Me(QMainWindow):
 
         self.addToolBar(toolBar)
 
+
+        #loop = asyncio.get_event_loop()
+        #component = Component(nc, loop)
+        #thr = Thread(target=another_thread, args=(component,))
+        #thr.start()
+
+        #loop.run_forever()
+
+
+    def request_handler(msg):
+        print("[Request on '{} {}']: {}".format(msg.subject, msg.reply, msg.data.decode()))
+        msg.self.nc.publish(msg.reply, b'OK')
+
     def rcv_nats(self):
         print('nats')
         #response = yield from self.nc.timed_request("foo", b'help me', 0.050)
@@ -151,6 +219,9 @@ class Me(QMainWindow):
         #print(response)
         #print("Received response: {message}".format(message=response.data.decode()))
         self.model.addRow('999','added item', '0.1','0.2','0.3')
+        #msg = self.nc.timed_request("help", b'help please', 0.500)
+        #print("[Response]: {}".format(msg.data))
+        #yield from self.nc.publish("help", b'hello')
 
     def selectedRows(self):
         rows = []
@@ -163,16 +234,21 @@ class Me(QMainWindow):
         self.model.removeRows(self.selectedRows())
 
 if __name__ == "__main__":
+    #loop = asyncio.get_event_loop()
+
     app = QApplication(sys.argv)
+    #loop = QEventLoop(app)
+    #asyncio.set_event_loop(loop)  # NEW must set the event loop
+
     my_window = Me()
     my_window.show()
-    my_window.raise_()
-
-#    loop = asyncio.get_event_loop()
-#    loop.run_until_complete(run(loop))
-
-
+    #loop.run_until_complete(run(loop))
+    #my_window.raise_()
     app.exec_()
+#
 
-#    loop.close()
+    #with loop:
+    #    loop.run_until_complete(run(loop))
+
+    #loop.close()
     sys.exit(0)
