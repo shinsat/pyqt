@@ -67,7 +67,7 @@ class Model(QAbstractItemModel):
 
 
 #@asyncio.coroutine
-def nats_pub(c):
+def nats_pub(c, msg):
     if not c.nats.nc.is_connected:
         print("Not connected to NATS!")
         return
@@ -77,11 +77,11 @@ def nats_pub(c):
     #print("nats_pub Connected to NATS at {}...".format(nc.connected_url.netloc))
     print('ei')
     #yield from nc.publish("discover", b'Hello')
-    asyncio.run_coroutine_threadsafe(c.nats.nc.publish("discover", b'Nats Pub Message'), loop=c.loop)
+    asyncio.run_coroutine_threadsafe(c.nats.nc.publish("discover", msg.encode('UTF-8')), loop=c.loop)
 
 
 class Me(QMainWindow, QObject):
-    nats_signal = pyqtSignal()
+    nats_signal = pyqtSignal(str)
 
     def __init__(self,loop):
         super().__init__()
@@ -117,8 +117,11 @@ class Me(QMainWindow, QObject):
 
         self.nats_signal.connect(self.rcvd)
 
-    def rcvd(self):
+    @pyqtSlot(str)
+    def rcvd(self, msg):
         print('me')
+        aaa = str(msg)
+        print(msg)
 
 
     def request_handler(msg):
@@ -134,7 +137,7 @@ class Me(QMainWindow, QObject):
         #self.nats.pubpub()
         #self.nats.nats_command.emit()
 #        asyncio.run_coroutine_threadsafe(self.nats.nc.publish("hello", b'world'), loop=self.nats.master(loop=None))
-        nats_pub(self)
+        nats_pub(self, '*')
 
     def selectedRows(self):
         rows = []
@@ -168,13 +171,6 @@ class Nats_control(QObject):
  #       print('trying publish')
   #      yield from self.nc.publish("help.me", b'test')
         #self.nats_command.connect(lambda : self.pubpub2())
-        self.nc2 = NATS()
-
-    @asyncio.coroutine
-    def pubpub2(self):
-        # self.pub()
-        print('trying publish')
-        yield from self.nc2.publish("help.me", b'test')
 
     @asyncio.coroutine
     def master(self,loop):
@@ -214,7 +210,7 @@ class Nats_control(QObject):
             data = msg.data.decode()
             print("Received a message on '{subject} {reply}': {data}".format(
               subject=subject, reply=reply, data=data))
-            self.parent().nats_signal.emit()
+            self.parent().nats_signal.emit(data)
 
         # Basic subscription to receive all published messages
         # which are being sent to a single topic 'discover'
