@@ -122,7 +122,7 @@ class Me(QMainWindow, QObject):
         print('me')
         aaa = str(msg)
         print(msg)
-
+        self.model.addRow('999',msg, '0.1','0.2','0.3')
 
     def request_handler(msg):
         print("[Request on '{} {}']: {}".format(msg.subject, msg.reply, msg.data.decode()))
