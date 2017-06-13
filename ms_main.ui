@@ -14,7 +14,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QTreeView" name="lv_news">
+   <widget class="QListView" name="lv_news">
     <property name="geometry">
      <rect>
       <x>300</x>

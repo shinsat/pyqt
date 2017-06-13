@@ -1,0 +1,1 @@
+https://stackoverflow.com/questions/15465677/smooth-lazy-loading-and-unloading-of-custom-indexwidget-in-qlistview
