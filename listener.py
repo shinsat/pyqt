@@ -99,8 +99,18 @@ class Listener:
         yield from asyncio.sleep(sleep_num, loop=self.loop)
 
     def sync_publish(self, msg):
-        asyncio.run_coroutine_threadsafe(c.publish("minami", msg), self.loop)
+        asyncio.run_coroutine_threadsafe(c.publish("discover", msg), self.loop)
         return self.que.get(self)
+
+
+class Nats_pubsub():
+    pass
+
+    def nats_publish(self, subject, msg):
+        pass
+
+    def nats_subscribe(self, subject, signal):
+        pass
 
 
 # test thread
@@ -116,7 +126,7 @@ class TestThread(Thread):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.WARN, format=LOG_FORMAT)
-    c = Listener(["nats://192.168.2.24:4222"])
+    c = Listener(["nats://localhost:4222"])
 
     tt = TestThread(ccc=c)
     tt.start()

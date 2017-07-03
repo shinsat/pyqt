@@ -78,7 +78,8 @@ class Model(QAbstractListModel):
         self.items.append(aaa)
         self.endInsertRows()
 
-
+    def sizeHint(self):
+        print('hi')
 
 #@asyncio.coroutine
 def nats_pub(c, msg):
@@ -102,7 +103,7 @@ class Me(QMainWindow, QObject):
 
         #self.nc = NATS()
         self.loop = loop
-        self.nats = Nats_control(self)
+        self.nats = Nats_control(self, self.nats_signal)
 
         self.ui = loadUi('ms_main.ui', self)
         self.model = Model(self.ui.lv_news)    #self
@@ -131,12 +132,16 @@ class Me(QMainWindow, QObject):
 
         self.nats_signal.connect(self.rcvd)
 
+#        tt = TestMyThread(ccc=loop, n=self.nats)
+#        tt.start()
+
     @pyqtSlot(str)
     def rcvd(self, msg):
         print('me')
         aaa = str(msg)
         print(msg)
         self.model.addRow('999',msg, '0.1','0.2','0.3')
+        self.adjustSize()
 
     def request_handler(msg):
         print("[Request on '{} {}']: {}".format(msg.subject, msg.reply, msg.data.decode()))
@@ -171,9 +176,9 @@ progress.show()
 class Nats_control(QObject):
     nats_command = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, sub_signal=None):
         super(Nats_control, self).__init__(parent)
-
+        self.sub_signal = sub_signal
         #self.nc = NATS()
         #self.nc = nc
         #self.my_parent = my_parent
@@ -224,7 +229,8 @@ class Nats_control(QObject):
             data = msg.data.decode()
             print("Received a message on '{subject} {reply}': {data}".format(
               subject=subject, reply=reply, data=data))
-            self.parent().nats_signal.emit(data)
+            #self.parent().nats_signal.emit(data)
+            self.sub_signal.emit(data)
 
         # Basic subscription to receive all published messages
         # which are being sent to a single topic 'discover'
@@ -301,6 +307,20 @@ def another_thread(c):
     msg = future.result()
     print("--- Got: ", msg.data)
 
+# test thread
+class TestMyThread(Thread):
+    def __init__(self, ccc):
+        super(TestMyThread, self).__init__()
+        self.loop = ccc
+
+    def run(self):
+        self.loop.run_until_complete(self.nats.master(loop))
+        try:
+            self.loop.run_forever()
+        finally:
+            self.loop.close()
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     loop = QEventLoop(app)
@@ -312,7 +332,11 @@ if __name__ == '__main__':
     # Example using NATS client from another thread.
     #thr = Thread(target=another_thread, args=(component,))
     #thr.start()
+    #tt = TestMyThread(ccc=loop)
+    #tt.start()
 
+
+#'''
     with loop: ## context manager calls .close() when loop completes, and releases all resources
         loop.run_until_complete(ui.nats.master(loop))
 #        loop.run_until_complete(run(loop))
@@ -320,3 +344,4 @@ if __name__ == '__main__':
             loop.run_forever()
         finally:
             loop.close()
+#'''

@@ -10,6 +10,8 @@ import asyncio
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrConnectionClosed, ErrTimeout, ErrNoServers
 from quamash import QEventLoop, QThreadExecutor
+from listener import Listener
+
 
 def run(loop):
   nc = NATS()
@@ -197,6 +199,10 @@ class Me(QMainWindow):
         addButton.clicked.connect(self.rcv_nats)
         toolBar.addWidget(addButton)
 
+        addButton = QPushButton('publish')
+        addButton.clicked.connect(self.nats_pub)
+        toolBar.addWidget(addButton)
+
         self.addToolBar(toolBar)
 
 
@@ -207,6 +213,15 @@ class Me(QMainWindow):
 
         #loop.run_forever()
 
+        self.c = Listener(["nats://localhost:4222"])
+        tt = TestThread(ccc=self.c)
+        tt.start()
+
+
+    def nats_pub(self):
+        print('publishing')
+        #self.c.publish('discover', 'hello nats')
+        self.c.sync_publish("some message ")
 
     def request_handler(msg):
         print("[Request on '{} {}']: {}".format(msg.subject, msg.reply, msg.data.decode()))
@@ -232,6 +247,17 @@ class Me(QMainWindow):
 
     def removeItems(self):
         self.model.removeRows(self.selectedRows())
+
+class TestThread(Thread):
+    def __init__(self, ccc):
+        super(TestThread, self).__init__()
+        self.c = ccc
+
+    def run(self):
+        self.c.loop.run_until_complete(self.c.connect())
+        self.c.loop.run_until_complete(self.c.subscribe("minami"))
+        self.c.loop.run_forever()
+
 
 if __name__ == "__main__":
     #loop = asyncio.get_event_loop()
