@@ -14,6 +14,11 @@ class Model(QAbstractItemModel):
             ['天ぷら','そば','温'],
             ]
 
+    def addRow(self):
+        self.beginInsertRows(QModelIndex(), len(self.items), len(self.items))
+        self.items.append(['A', 'B', 'C'])
+        self.endInsertRows()
+
     def index(self, row, column, parent=QModelIndex()):
         return self.createIndex(row, column, None)
 
@@ -36,6 +41,9 @@ class Model(QAbstractItemModel):
                 return None
         return
 
+    def just_update(self):
+        self.items[1][2] = 'HoOh'
+
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
@@ -48,6 +56,8 @@ class MainWindow(QMainWindow):
         model = Model(self)
         view.setModel(model)
         self.setCentralWidget(view)
+        model.addRow()
+        model.just_update()
 
 def main():
     app = QApplication(sys.argv)
