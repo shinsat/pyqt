@@ -2,6 +2,7 @@ import sys
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
+from PyQt5.uic import *
 
 data = {'col1':['1','2','3'], 'col2':['4','5','6'], 'col3':['7','8','9']}
 
@@ -29,30 +30,28 @@ class MyTable(QTableWidget):
         self.setmydata()
         self.resizeColumnsToContents()
         self.resizeRowsToContents()
-        self.setRowHeight(0, 15)
+        self.setRowHeight(0, 10)
 
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setShowGrid(False)
 
-        self.setFixedSize(self.sizeHint())
+#        self.horizontalHeader().setSectionResizeMode(1)
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        #self.setFixedSize(self.sizeHint())
+        #vb = QVBoxLayout(self)
+        #self.setLayout(vb)
 #        mydel = MyDelegate(self, self)
 #        self.setItemDelegate(mydel)
-    #'''
+    '''
     def sizeHint(self):
         horizontal = self.horizontalHeader()
         vertical = self.verticalHeader()
         frame = self.frameWidth() * 2
         return QSize(horizontal.length() + vertical.width() + frame,
                      vertical.length() + horizontal.height() + frame)
-    #'''
+    '''
 
-    def sizeHint(self):
-        print('hi')
-        horizontal = self.horizontalHeader()
-        vertical = self.verticalHeader()
-        frame = self.frameWidth() * 2
-        return QSize(horizontal.length() + vertical.width() + frame,
-                     vertical.length() + horizontal.height() + frame)
 
     def setmydata(self):
 
