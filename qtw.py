@@ -30,11 +30,13 @@ class MyTable(QTableWidget):
         self.setmydata()
         self.resizeColumnsToContents()
         self.resizeRowsToContents()
-        self.setRowHeight(0, 10)
 
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.setShowGrid(False)
-
+        f = QFont()
+        f.setPointSize(7)
+        self.setFont(f)
+        #{self.setRowHeight(i, 1) for i in range(5)}
+        #self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        #self.setShowGrid(False)
 #        self.horizontalHeader().setSectionResizeMode(1)
         self.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -66,7 +68,8 @@ class MyTable(QTableWidget):
 
 def main(args):
     app = QApplication(args)
-    table = MyTable(data, 5, 3)
+    table = MyTable(data, 15, 3)
+    table.setGeometry(100, 100, 150, 250)
 
     table.show()
     sys.exit(app.exec_())
