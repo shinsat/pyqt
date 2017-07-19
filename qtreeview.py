@@ -35,6 +35,8 @@ class MyTable(QTableWidget):
         f.setPointSize(8)
         self.setFont(f)
 
+        color = pyqtProperty(QColor, self.getColor, self.setColor)
+
         #{self.setRowHeight(i, 12) for i in range(5)}
         #self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         #self.setShowGrid(False)
@@ -55,6 +57,14 @@ class MyTable(QTableWidget):
                      vertical.length() + horizontal.height() + frame)
     '''
 
+
+    def getColor(self):
+        return self.label.palette().text().color()
+
+    def setColor(self, color):
+        palette = self.label.palette()
+        palette.setColor(self.label.foregroundRole(), color)
+        self.label.setPalette(palette)
 
     def setmydata(self):
 

@@ -14,7 +14,7 @@ class Model(QAbstractItemModel):
             ['天ぷら','そば','温'],
             ]
     headers = 'トッピング', 'うどん/そば', '温/冷'
-
+    
 
     def addRow(self):
         self.beginInsertRows(QModelIndex(), len(self.items), len(self.items))
