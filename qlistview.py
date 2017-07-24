@@ -14,12 +14,23 @@ class Model(QAbstractItemModel):
             ['天ぷら','そば','温'],
             ]
     headers = 'トッピング', 'うどん/そば', '温/冷'
-    
+
 
     def addRow(self):
-        self.beginInsertRows(QModelIndex(), len(self.items), len(self.items))
+#        self.beginInsertRows(QModelIndex(), len(self.items), len(self.items))
+        self.beginInsertRows(self.createIndex(1, 1), len(self.items), len(self.items))
+        #adding = ['a', 'b', 'c']
+        #effect = QGraphicsColorizeEffect(adding)
+        #color_anim = QPropertyAnimation(adding, 'background-color')
+        #self.color_anim.setStartValue(QColor(255, 0, 0))
+        #self.color_anim.setKeyValueAt(0.5, QColor(0, 255, 0))
+        #self.color_anim.setEndValue(QColor(255, 0, 0))
+
         self.items.append(['A', 'B', 'C'])
         self.endInsertRows()
+
+        #ttt = self.items[1][1]
+        #effect = QGraphicsColorizeEffect(self.items[1][1])
 
     def index(self, row, column, parent=QModelIndex()):
         return self.createIndex(row, column, None)
@@ -55,13 +66,25 @@ class Model(QAbstractItemModel):
         if orientation == Qt.Horizontal:
             return self.headers[section]
 
+    def insertRows(self, position=0, count=1, parent=QModelIndex()):
+        """Insert `count` rows after the given row."""
+
+        node = self.nodeFromIndex(parent)
+        self.beginInsertRows(parent, position, position + count - 1)
+        node.insertChild(['BBB', 'cc'], position)
+        self.endInsertRows()
+        return True
+
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
 
-        view = QTreeView(self)
-        h = view.header()
+        self.view = QTreeView(self)
+        #self.view.setItemsExpandable(False)
+        self.view.setIndentation(1)
+
+        h = self.view.header()
         h.setDefaultAlignment(Qt.AlignCenter)       #<---ここ
 #        view.horizontalHeader().setDefaultAlignment(Qt.AlignHCenter)
 #        view = QTableView(self)
@@ -69,11 +92,23 @@ class MainWindow(QMainWindow):
         #view.verticalHeader().setDefaultSectionSize(view.rowHeight(10))
         #view.verticalHeader().setDefaultSectionSize(15)
 
+        self.view.doubleClicked.connect(self.double_clicked_item)
+
         model = Model(self)
-        view.setModel(model)
-        self.setCentralWidget(view)
+        self.view.setModel(model)
+        self.setCentralWidget(self.view)
         model.addRow()
+#model.insertRows()
         model.just_update()
+
+    def double_clicked_item(self):
+#        index = self.view.selectedIndexes()
+#        id_us = self.view.model().item(index.row(), index.column())
+#        print("index : " + id_us)
+        pass
+
+
+
 
 def main():
     app = QApplication(sys.argv)
