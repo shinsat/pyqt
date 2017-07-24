@@ -26,12 +26,29 @@ class MyModel(QStandardItemModel):
     def get_date(self, path):
         return "a date"
 
+    def getitem(self, index):
+        aaa = self.itemFromIndex(index)
+        return self.item(index.row(), index.column())
+
+
 
 if __name__ == "__main__":
+
+
     app = QApplication(sys.argv)
     model=MyModel()
+
+
     treeView= QTreeView()
     treeView.setModel(model)
+
+    def ccc( index):
+        item = treeView.selectedIndexes()[0]
+        print(item.model().itemFromIndex(index).text())
+
+    treeView.doubleClicked.connect(ccc)
+
+
     model.setHorizontalHeaderLabels(["name","date"])
     treeView.show()
     sys.exit(app.exec_())
