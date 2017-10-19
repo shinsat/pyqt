@@ -13,7 +13,28 @@ class Model(QAbstractItemModel):
             ['月見','うどん','冷'],
             ['天ぷら','そば','温'],
             ]
+
+        self.parent = parent
+
     headers = 'トッピング', 'うどん/そば', '温/冷'
+
+    def addRow2(self):
+        self.beginInsertRows(self.createIndex(1, 1), len(self.items), len(self.items))
+
+        self.w = QWidget()
+
+        self.hbox = QHBoxLayout()
+        self.pb = QPushButton('Bt')
+        self.hbox.addWidget(self.pb)
+        self.pb2 = QPushButton('Bt2')
+        self.hbox.addWidget(self.pb2)
+        self.pb3 = QPushButton('Bt3')
+        self.hbox.addWidget(self.pb3)
+
+        self.w.setLayout(self.hbox)
+        self.items.append(['X', 'XX', self.w])
+
+        self.endInsertRows()
 
 
     def addRow(self):
@@ -26,7 +47,13 @@ class Model(QAbstractItemModel):
         #self.color_anim.setKeyValueAt(0.5, QColor(0, 255, 0))
         #self.color_anim.setEndValue(QColor(255, 0, 0))
 
-        self.items.append(['A', 'B', 'C'])
+        self.w = QWidget()
+        self.hbox = QHBoxLayout()
+        self.pb = QPushButton('Bt')
+        self.hbox.addWidget(self.pb)
+        self.w.setLayout(self.hbox)
+        #self.items.append(['A', 'B', 'C'])
+        self.items.append(['A', 'B', self.w])
         self.endInsertRows()
 
         #ttt = self.items[1][1]
@@ -49,7 +76,16 @@ class Model(QAbstractItemModel):
     def data(self, index, role=Qt.DisplayRole):
         if role == Qt.DisplayRole:
             try:
-                return self.items[index.row()][index.column()]
+                if index.row() == 4 and index.column() == 2:
+                    self.parent.view.setIndexWidget(index, self.items[index.row()][index.column()])
+
+                    return QVariant()
+                elif index.row() == 5 and index.column() == 2:
+                    self.parent.view.setIndexWidget(index, self.items[index.row()][index.column()])
+
+                    return QVariant()
+                else:
+                    return self.items[index.row()][index.column()]
             except:
                 return None
         elif role == Qt.TextAlignmentRole:              #<---ここ
@@ -98,6 +134,8 @@ class MainWindow(QMainWindow):
         self.view.setModel(model)
         self.setCentralWidget(self.view)
         model.addRow()
+        model.addRow2()
+
 #model.insertRows()
         model.just_update()
 
